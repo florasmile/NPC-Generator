@@ -3,10 +3,13 @@ from ..db import db
 from ..models.character import Character
 from ..models.greeting import Greeting
 from sqlalchemy import func, union, except_
-import google.generativeai as genai
+# import google.generativeai as genai
+from google import genai
 import os
 
-genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+
+# genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 bp = Blueprint("characters", __name__, url_prefix="/characters")
 
@@ -30,7 +33,7 @@ def get_characters():
 
     characters = db.session.scalars(character_query)
     response = []
-
+    
     for character in characters:
         response.append(
             {
@@ -67,9 +70,8 @@ def add_greetings(char_id):
     return [greeting.to_dict() for greeting in greetings]
 
 def generate_greetings(character):
-    model = genai.GenerativeModel("gemini-1.5-flash")
-    input_message = f"I am writing a fantasy RPG video game. I have an npc named {character.name} who is {character.age} years old. They are a {character.occupation} who has a {character.personality} personality. Please generate a Python style list of 10 stock phrases they might use when the main character talks to them. Please return just the list without a variable name and square brackets."
-    response = model.generate_content(input_message)
+    contents = f"I am writing a fantasy RPG video game. I have an npc named {character.name} who is {character.age} years old. They are a {character.occupation} who has a {character.personality} personality. Please generate a Python style list of 10 stock phrases they might use when the main character talks to them. Please return just the list without a variable name and square brackets."
+    response = client.models.generate_content(model="gemini-1.5-flash", contents=contents)
     response_split = response.text.split("\n")
     return response_split[:-1]
 
